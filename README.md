@@ -14,23 +14,37 @@ cash flow, and Schedule E (Form 1040) tax figures.
 
 ### What's inside the workbook
 
-- **Instructions** — setup steps, monthly routine, year-end tax checklist, and a
-  Massachusetts landlord checklist (deposit law, allowed fees, lead paint, insurance).
-- **Settings** — rent, mortgage, HOA, rental start date, tax year, category lists.
-- **Income / Expenses** — transaction logs with dropdown categories mapped to
-  Schedule E lines.
+Tabs are ordered and color-coded by function: **blue = reporting**,
+**amber = inputs**, **violet = calculations**.
+
+**Instructions** (gray)
+
+- Setup steps, monthly routine, year-end tax checklist, and a Massachusetts
+  landlord checklist (deposit law, allowed fees, lead paint, insurance).
+
+**Reporting** (blue — read-only, build themselves)
+
 - **Cash Flow** — auto-built monthly dashboard with net/cumulative cash flow,
   YTD summary, plan-vs-actual, and two charts.
 - **Tax Summary** — mirrors Schedule E Part I line by line; a single year-end
   input for Form 1098 mortgage interest.
-- **Depreciation** — 27.5-year residential straight-line with the IRS mid-month
-  convention (Pub 946 Table A-6), building + improvements.
-- **Cap Improvements** — improvements log with per-item current-year depreciation.
+
+**Inputs** (amber — where you type)
+
+- **Settings** — rent, mortgage, HOA, rental start date, tax year, category lists.
+- **Income / Expenses** — transaction logs with dropdown categories mapped to
+  Schedule E lines.
 - **Tenants** — lease details, lease-end countdown, and a monthly rent roll
   with Paid/Partial/Unpaid status.
 - **Deposit** — Massachusetts security-deposit compliance (G.L. c. 186 § 15B):
   deadlines, interest, move-out deduction ledger.
+- **Cap Improvements** — improvements log with per-item current-year depreciation.
 - **Mileage** — trip log at the IRS standard mileage rate.
+
+**Calculations** (violet — one-time setup, then automatic)
+
+- **Depreciation** — 27.5-year residential straight-line with the IRS mid-month
+  convention (Pub 946 Table A-6), building + improvements.
 
 All formulas were verified end-to-end by seeding sample transactions and
 recalculating with LibreOffice.

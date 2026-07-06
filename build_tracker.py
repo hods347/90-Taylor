@@ -145,7 +145,6 @@ wb = Workbook()
 # =================================================================
 ws = wb.active
 ws.title = "Instructions"
-ws.sheet_properties.tabColor = "898781"
 title_bar(ws, "90 TAYLOR ST RENTAL TRACKER - HOW TO USE", 8)
 set_widths(ws, {"A": 4, "B": 110})
 
@@ -156,8 +155,14 @@ INSTRUCTIONS = [
          "Everything (formulas, dropdowns, named ranges, conditional formatting) converts. "
          "Verify the two charts on the Cash Flow tab came through; recreate via Insert > Chart if not."),
     ("", ""),
-    ("H", "2. COLOR CODE"),
-    ("", "YELLOW cells = you type here.  Everything else calculates automatically - don't overwrite it."),
+    ("H", "2. HOW THE TABS ARE ORGANIZED"),
+    ("", "Tabs are ordered and color-coded by what they do:"),
+    ("", "- BLUE tabs = REPORTING (Cash Flow, Tax Summary). Read-only - they build themselves from your entries."),
+    ("", "- AMBER tabs = INPUTS (Settings, Income, Expenses, Tenants, Deposit, Cap Improvements, Mileage). "
+         "This is where you type."),
+    ("", "- VIOLET tab = CALCULATIONS (Depreciation). Set its one-time basis inputs, then it runs itself."),
+    ("", "Within every tab: YELLOW cells = you type here. Everything else calculates automatically - "
+         "don't overwrite it."),
     ("", ""),
     ("H", "3. ONE-TIME SETUP (do now, ~10 minutes)"),
     ("", "- Settings tab: confirm rent, mortgage, HOA, rental start date, and tax year."),
@@ -222,7 +227,6 @@ for kind, text in INSTRUCTIONS:
 # Settings
 # =================================================================
 ws = wb.create_sheet("Settings")
-ws.sheet_properties.tabColor = "EDA100"
 title_bar(ws, "SETTINGS - edit the yellow cells", 11)
 set_widths(ws, {"A": 34, "B": 22, "C": 46, "D": 2, "E": 26, "F": 2, "G": 22,
                 "H": 2, "I": 30, "J": 14, "K": 52})
@@ -290,7 +294,6 @@ for name, ref in defs.items():
 # Income log
 # =================================================================
 ws = wb.create_sheet("Income")
-ws.sheet_properties.tabColor = AQUA
 header_row(ws, 1, ["Date", "Payer", "Type", "Amount", "Method", "Notes"])
 set_widths(ws, {"A": 12, "B": 22, "C": 22, "D": 13, "E": 18, "F": 40})
 ws.freeze_panes = "A2"
@@ -308,7 +311,6 @@ dv_pay.add(f"E2:E{1 + INCOME_ROWS}")
 # Expenses log
 # =================================================================
 ws = wb.create_sheet("Expenses")
-ws.sheet_properties.tabColor = "E34948"
 header_row(ws, 1, ["Date", "Vendor / payee", "Category", "Amount", "Method",
                    "Receipt?", "Notes", "Tax treatment (auto)"])
 set_widths(ws, {"A": 12, "B": 24, "C": 28, "D": 13, "E": 18, "F": 10,
@@ -332,7 +334,6 @@ dv_yn.add(f"F2:F{1 + EXP_ROWS}")
 # Cash Flow dashboard
 # =================================================================
 ws = wb.create_sheet("Cash Flow")
-ws.sheet_properties.tabColor = BLUE
 title_bar(ws, "MONTHLY CASH FLOW", 10)
 ws.cell(row=2, column=1, value="Year:").font = F_BOLD
 c = ws.cell(row=2, column=2, value="=TaxYear")
@@ -462,7 +463,6 @@ ws.add_chart(chart2, "L23")
 # Tax Summary (Schedule E)
 # =================================================================
 ws = wb.create_sheet("Tax Summary")
-ws.sheet_properties.tabColor = "4A3AA7"
 title_bar(ws, "SCHEDULE E (FORM 1040) - PART I SUMMARY", 5)
 set_widths(ws, {"A": 8, "B": 42, "C": 16, "D": 64})
 
@@ -572,7 +572,6 @@ for note in [
 # Depreciation
 # =================================================================
 ws = wb.create_sheet("Depreciation")
-ws.sheet_properties.tabColor = "4A3AA7"
 title_bar(ws, "DEPRECIATION - 27.5-YEAR RESIDENTIAL (MID-MONTH CONVENTION)", 8)
 set_widths(ws, {"A": 38, "B": 18, "C": 12, "D": 16, "E": 16, "F": 14, "G": 4})
 
@@ -640,7 +639,6 @@ ws.cell(row=47, column=1,
 # Cap Improvements
 # =================================================================
 ws = wb.create_sheet("Cap Improvements")
-ws.sheet_properties.tabColor = "4A3AA7"
 title_bar(ws, "CAPITAL IMPROVEMENTS - depreciate, don't deduct", 6)
 set_widths(ws, {"A": 16, "B": 36, "C": 14, "D": 34, "E": 12, "F": 18})
 ws.cell(row=2, column=1,
@@ -677,7 +675,6 @@ for i in range(CAPEX_ROWS):
 # Tenants & rent roll
 # =================================================================
 ws = wb.create_sheet("Tenants")
-ws.sheet_properties.tabColor = AQUA
 title_bar(ws, "TENANTS & LEASE", 5)
 set_widths(ws, {"A": 30, "B": 24, "C": 24, "D": 14, "E": 12})
 
@@ -747,7 +744,6 @@ for state, color in (("Paid", GREEN_FILL), ("Partial", YELLOW_FILL),
 # Security Deposit (Massachusetts)
 # =================================================================
 ws = wb.create_sheet("Deposit")
-ws.sheet_properties.tabColor = "EB6834"
 title_bar(ws, "SECURITY DEPOSIT - MASSACHUSETTS G.L. c.186 s.15B", 6)
 set_widths(ws, {"A": 40, "B": 20, "C": 44, "D": 14, "E": 16, "F": 4})
 ws.cell(row=2, column=1,
@@ -826,7 +822,6 @@ ws.cell(row=34, column=1,
 # Mileage
 # =================================================================
 ws = wb.create_sheet("Mileage")
-ws.sheet_properties.tabColor = "E87BA4"
 header_row(ws, 1, ["Date", "From", "To", "Purpose", "Miles",
                    "Deduction (auto)"])
 set_widths(ws, {"A": 12, "B": 22, "C": 22, "D": 32, "E": 10, "F": 16,
@@ -845,9 +840,22 @@ c.number_format = MONEY
 ws.cell(row=3, column=8, value="Feeds Schedule E line 6.").font = F_NOTE
 
 # ---------------------------------------------------------------- save
-order = ["Instructions", "Settings", "Income", "Expenses", "Cash Flow",
-         "Tax Summary", "Depreciation", "Cap Improvements", "Tenants",
-         "Deposit", "Mileage"]
+# Tabs grouped by function: blue = reporting, amber = inputs,
+# violet = calculations; ordered reporting -> inputs -> calculations.
+TAB_GROUPS = {
+    "898781": ["Instructions"],
+    BLUE: ["Cash Flow", "Tax Summary"],
+    "EDA100": ["Settings", "Income", "Expenses", "Tenants", "Deposit",
+               "Cap Improvements", "Mileage"],
+    "4A3AA7": ["Depreciation"],
+}
+for color, names in TAB_GROUPS.items():
+    for name in names:
+        wb[name].sheet_properties.tabColor = color
+
+order = ["Instructions", "Cash Flow", "Tax Summary", "Settings", "Income",
+         "Expenses", "Tenants", "Deposit", "Cap Improvements", "Mileage",
+         "Depreciation"]
 wb._sheets = [wb[name] for name in order]
 wb.save(OUT)
 print(f"wrote {OUT}")
