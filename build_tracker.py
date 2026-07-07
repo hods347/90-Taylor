@@ -44,7 +44,7 @@ PAY_METHODS = ["Check", "ACH / bank transfer", "Zelle", "Venmo", "Cash",
 # (category, Schedule E line, tax treatment)
 CATEGORIES = [
     ("Advertising", "5", "Deductible"),
-    ("Auto and travel", "6", "Deductible (mileage has its own tab)"),
+    ("Auto and travel", "6", "Deductible"),
     ("Cleaning and maintenance", "7", "Deductible"),
     ("Commissions", "8", "Deductible"),
     ("Insurance", "9", "Deductible"),
@@ -233,7 +233,7 @@ set_widths(ws, {"A": 34, "B": 22, "C": 46, "D": 2, "E": 26, "F": 2, "G": 22,
 
 label_input(ws, 4, "Property address", "90 Taylor Street, Waltham, MA")
 label_input(ws, 5, "Tax / reporting year", TAX_YEAR, "0",
-            "Change each January - every report follows this year.")
+            "Update each January.")
 label_input(ws, 6, "Rental start (placed in service)", RENT_START, DATE_FMT,
             "First day the unit is ready and available to rent.")
 label_input(ws, 7, "Target monthly rent", MONTHLY_RENT, MONEY,
@@ -338,8 +338,6 @@ title_bar(ws, "MONTHLY CASH FLOW", 10)
 ws.cell(row=2, column=1, value="Year:").font = F_BOLD
 c = ws.cell(row=2, column=2, value="=TaxYear")
 c.font = F_BOLD
-ws.cell(row=2, column=3,
-        value="Fills in automatically from the Income / Expenses / Cap Improvements logs.").font = F_NOTE
 
 header_row(ws, 4, ["Month", "Rent income", "Other income", "Total income",
                    "Operating expenses", "Mortgage (P&I)",
@@ -405,7 +403,7 @@ for i, (lbl, f) in enumerate(kpis):
     c.number_format = MONEY_RED if i not in (3,) else "0"
 
 ws.merge_cells("A26:C26")
-ws.cell(row=26, column=1, value="MONTHLY PLAN (from Settings)").font = F_SUBHDR
+ws.cell(row=26, column=1, value="MONTHLY PLAN").font = F_SUBHDR
 ws.cell(row=26, column=1).fill = FILL_SUB
 plan = [
     ("Target rent", "=MonthlyRent"),
@@ -464,7 +462,7 @@ ws.add_chart(chart2, "L23")
 # =================================================================
 ws = wb.create_sheet("Tax Summary")
 title_bar(ws, "SCHEDULE E (FORM 1040) - PART I SUMMARY", 5)
-set_widths(ws, {"A": 8, "B": 42, "C": 16, "D": 64})
+set_widths(ws, {"A": 8, "B": 46, "C": 16, "D": 46})
 
 ws.cell(row=2, column=2, value="Tax year:").font = F_BOLD
 ws.cell(row=2, column=3, value="=TaxYear").font = F_BOLD
@@ -476,7 +474,7 @@ c = ws.cell(row=4, column=3,
             value="=MAX(0,DATE(TaxYear,12,31)-MAX(RentStart,DATE(TaxYear,1,1))+1)")
 c.fill = FILL_IN
 ws.cell(row=4, column=4,
-        value="Auto-computed from rental start; OVERWRITE with actual days rented if the unit sat vacant.").font = F_NOTE
+        value="Overwrite with the actual days rented if the unit sat vacant.").font = F_NOTE
 ws.cell(row=5, column=2, value="Personal use days (line 2)")
 c = ws.cell(row=5, column=3, value=0)
 c.fill = FILL_IN
@@ -488,41 +486,37 @@ def sumifs_cat(cat):
     return f'=SUMIFS(ExpAmts,ExpDates,{YR},ExpCats,"{cat}")'
 
 
-header_row(ws, 7, ["Line", "Description", "Amount", "Where it comes from"])
+header_row(ws, 7, ["Line", "Description", "Amount"])
 ws.cell(row=8, column=1, value="3").border = BORDER
 ws.cell(row=8, column=2, value="Rents received").border = BORDER
 c = ws.cell(row=8, column=3,
             value='=SUMIFS(IncomeAmts,IncomeDates,">="&DATE(TaxYear,1,1),IncomeDates,"<="&DATE(TaxYear,12,31))')
 c.number_format = MONEY
 c.border = BORDER
-ws.cell(row=8, column=4,
-        value="All Income-tab entries for the year (late fees & reimbursements count as rent).").font = F_NOTE
 
 tax_lines = [
-    ("5", "Advertising", sumifs_cat("Advertising"), "Expenses tab"),
+    ("5", "Advertising", sumifs_cat("Advertising")),
     ("6", "Auto and travel",
      f'=SUMIFS(ExpAmts,ExpDates,{YR},ExpCats,"Auto and travel")'
-     f'+SUMIFS(MileDed,MileDates,">="&DATE(TaxYear,1,1),MileDates,"<="&DATE(TaxYear,12,31))',
-     "Expenses tab + Mileage tab"),
-    ("7", "Cleaning and maintenance", sumifs_cat("Cleaning and maintenance"), "Expenses tab"),
-    ("8", "Commissions", sumifs_cat("Commissions"), "Expenses tab"),
-    ("9", "Insurance", sumifs_cat("Insurance"), "Expenses tab"),
-    ("10", "Legal and other professional fees", sumifs_cat("Legal and professional fees"), "Expenses tab"),
-    ("11", "Management fees", sumifs_cat("Management fees"), "Expenses tab"),
-    ("12", "Mortgage interest paid to banks (Form 1098)", None,
-     "TYPE the box-1 amount from your lender's Form 1098 here at year-end."),
-    ("13", "Other interest", sumifs_cat("Other interest (not mortgage)"), "Expenses tab"),
-    ("14", "Repairs", sumifs_cat("Repairs"), "Expenses tab"),
-    ("15", "Supplies", sumifs_cat("Supplies"), "Expenses tab"),
-    ("16", "Taxes (real estate)", sumifs_cat("Taxes - real estate"), "Expenses tab"),
-    ("17", "Utilities", sumifs_cat("Utilities"), "Expenses tab"),
-    ("18", "Depreciation", "=CurrentYearDep", "Depreciation tab (building + improvements)"),
-    ("19", "Other: HOA / condo fees", sumifs_cat("HOA / condo fees"), "Expenses tab"),
-    ("19", "Other: bank & misc fees", sumifs_cat("Bank & misc fees"), "Expenses tab"),
-    ("19", "Other: everything else", sumifs_cat("Other (describe in notes)"), "Expenses tab"),
+     f'+SUMIFS(MileDed,MileDates,">="&DATE(TaxYear,1,1),MileDates,"<="&DATE(TaxYear,12,31))'),
+    ("7", "Cleaning and maintenance", sumifs_cat("Cleaning and maintenance")),
+    ("8", "Commissions", sumifs_cat("Commissions")),
+    ("9", "Insurance", sumifs_cat("Insurance")),
+    ("10", "Legal and other professional fees", sumifs_cat("Legal and professional fees")),
+    ("11", "Management fees", sumifs_cat("Management fees")),
+    ("12", "Mortgage interest - enter from Form 1098 box 1", None),
+    ("13", "Other interest", sumifs_cat("Other interest (not mortgage)")),
+    ("14", "Repairs", sumifs_cat("Repairs")),
+    ("15", "Supplies", sumifs_cat("Supplies")),
+    ("16", "Taxes (real estate)", sumifs_cat("Taxes - real estate")),
+    ("17", "Utilities", sumifs_cat("Utilities")),
+    ("18", "Depreciation", "=CurrentYearDep"),
+    ("19", "Other: HOA / condo fees", sumifs_cat("HOA / condo fees")),
+    ("19", "Other: bank & misc fees", sumifs_cat("Bank & misc fees")),
+    ("19", "Other: everything else", sumifs_cat("Other (describe in notes)")),
 ]
 row = 8
-for line, desc, formula, src in tax_lines:
+for line, desc, formula in tax_lines:
     row += 1
     ws.cell(row=row, column=1, value=line).border = BORDER
     ws.cell(row=row, column=2, value=desc).border = BORDER
@@ -534,7 +528,6 @@ for line, desc, formula, src in tax_lines:
         c.value = formula
     c.number_format = MONEY
     c.border = BORDER
-    ws.cell(row=row, column=4, value=src).font = F_NOTE
 # the Form 1098 input (line 12) lands at C16 (named Form1098Interest)
 
 row += 1
@@ -560,8 +553,8 @@ c.border = BORDER
 
 row += 2
 for note in [
-    "Security deposits you hold are NOT income (and returning them is not an expense) - tracked on the Deposit tab.",
-    "The full mortgage payment is a cash-flow item only; just the Form 1098 interest (line 12) is deductible.",
+    "Security deposits you hold are not income, and returning them is not an expense.",
+    "Only the interest portion of the mortgage payment (Form 1098) is deductible - never the full payment.",
     "A net loss may be limited by passive-activity rules ($25k active-participation allowance, phases out $100k-$150k MAGI).",
     "Review with your CPA - this is bookkeeping support, not tax advice.",
 ]:
@@ -585,8 +578,7 @@ c = ws.cell(row=7, column=2, value="=B4+B5-B6")
 c.number_format = MONEY
 c.font = F_BOLD
 c.border = BORDER
-label_input(ws, 8, "Placed-in-service date", "=RentStart", DATE_FMT,
-            "Defaults to the Settings rental-start date; overwrite if different.")
+label_input(ws, 8, "Placed-in-service date", "=RentStart", DATE_FMT)
 ws.cell(row=9, column=1,
         value="Land split tip: apply the Waltham assessor's land/building ratio to your purchase price.").font = F_NOTE
 
@@ -596,10 +588,10 @@ ws.cell(row=12, column=1, value="Building depreciation for the tax year")
 c = ws.cell(row=12, column=2,
             value="=IFERROR(INDEX($D$17:$D$45,MATCH(TaxYear,$B$17:$B$45,0)),0)")
 c.number_format = MONEY
-ws.cell(row=13, column=1, value="Improvements depreciation (Cap Improvements tab)")
+ws.cell(row=13, column=1, value="Improvements depreciation")
 c = ws.cell(row=13, column=2, value="=SUM(CapexDep)")
 c.number_format = MONEY
-ws.cell(row=14, column=1, value="TOTAL - feeds Schedule E line 18").font = F_BOLD
+ws.cell(row=14, column=1, value="Total depreciation for the tax year").font = F_BOLD
 c = ws.cell(row=14, column=2, value="=B12+B13")
 c.number_format = MONEY
 c.font = F_BOLD
@@ -642,10 +634,10 @@ ws = wb.create_sheet("Cap Improvements")
 title_bar(ws, "CAPITAL IMPROVEMENTS - depreciate, don't deduct", 6)
 set_widths(ws, {"A": 16, "B": 36, "C": 14, "D": 34, "E": 12, "F": 18})
 ws.cell(row=2, column=1,
-        value="Improvements (new roof share, HVAC, remodel, new flooring) go here - NOT the Expenses tab. "
-              "They depreciate over 27.5 years and add to your basis when you sell.").font = F_NOTE
+        value="Improvements (new roof share, HVAC, remodel, new flooring) depreciate over 27.5 years "
+              "and add to your basis when you sell.").font = F_NOTE
 ws.cell(row=3, column=1,
-        value="Repairs stay on the Expenses tab. Items under $2,500/invoice can often be expensed "
+        value="Items under $2,500/invoice can often be expensed instead "
               "(de minimis safe harbor) - ask your CPA.").font = F_NOTE
 ws.cell(row=4, column=2, value="Totals:").font = F_BOLD
 c = ws.cell(row=4, column=3, value=f"=SUM(C6:C{5 + CAPEX_ROWS})")
@@ -747,7 +739,7 @@ ws = wb.create_sheet("Deposit")
 title_bar(ws, "SECURITY DEPOSIT - MASSACHUSETTS G.L. c.186 s.15B", 6)
 set_widths(ws, {"A": 40, "B": 20, "C": 44, "D": 14, "E": 16, "F": 4})
 ws.cell(row=2, column=1,
-        value="MA deposit law carries treble damages + attorney's fees for violations - keep this tab current.").font = F_NOTE
+        value="MA deposit law carries treble damages + attorney's fees for violations.").font = F_NOTE
 
 ws.cell(row=4, column=1, value="DEPOSIT DETAILS").font = F_SUBHDR
 ws.cell(row=4, column=1).fill = FILL_SUB
@@ -837,7 +829,6 @@ c = ws.cell(row=2, column=9,
             value='=SUMIFS(MileDed,MileDates,">="&DATE(TaxYear,1,1),MileDates,"<="&DATE(TaxYear,12,31))')
 c.font = F_BOLD
 c.number_format = MONEY
-ws.cell(row=3, column=8, value="Feeds Schedule E line 6.").font = F_NOTE
 
 # ---------------------------------------------------------------- save
 # Tabs grouped by function: blue = reporting, amber = inputs,
