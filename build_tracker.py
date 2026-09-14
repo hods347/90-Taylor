@@ -24,10 +24,18 @@ OUT = "90-Taylor-Rental-Tracker.xlsx"
 
 TAX_YEAR = 2026
 RENT_START = dt.date(2026, 9, 1)
-MONTHLY_RENT = 3500.00
+MONTHLY_RENT = 3200.00
 MORTGAGE_PMT = 2236.32
 HOA_FEE = 290.00
 MILEAGE_RATE = 0.70  # update each January to the new IRS rate
+
+# Lease signed 09/09/2026 (GBREB fixed-term lease + addendum)
+TENANT_1 = "Scott Reynolds"
+TENANT_2 = "Sara Daly"
+LEASE_START = dt.date(2026, 10, 1)
+LEASE_END = dt.date(2027, 9, 30)
+RENT_DUE_DAY = 1
+KEYPAD_CODE = "839214"
 
 INCOME_TYPES = [
     "Rent",
@@ -236,8 +244,8 @@ label_input(ws, 5, "Tax / reporting year", TAX_YEAR, "0",
             "Update each January.")
 label_input(ws, 6, "Rental start (placed in service)", RENT_START, DATE_FMT,
             "First day the unit is ready and available to rent.")
-label_input(ws, 7, "Target monthly rent", MONTHLY_RENT, MONEY,
-            "Update when you sign the lease.")
+label_input(ws, 7, "Monthly rent", MONTHLY_RENT, MONEY,
+            "Per lease of 10/01/2026 - 09/30/2027.")
 label_input(ws, 8, "Monthly mortgage payment (P&I)", MORTGAGE_PMT, MONEY)
 label_input(ws, 9, "Monthly HOA fee", HOA_FEE, MONEY)
 label_input(ws, 10, "IRS standard mileage rate", MILEAGE_RATE, '"$"0.000',
@@ -286,6 +294,7 @@ defs = {
     "FirstYearRates": "Depreciation!$E$4:$F$15",
     "CurrentYearDep": "Depreciation!$B$14",
     "Form1098Interest": "'Tax Summary'!$C$16",
+    "LeaseStart": "Tenants!$B$9",
 }
 for name, ref in defs.items():
     wb.defined_names.add(DefinedName(name, attr_text=ref))
@@ -471,7 +480,7 @@ ws.cell(row=3, column=3, value="=Settings!B4")
 
 ws.cell(row=4, column=2, value="Fair rental days (line 2)")
 c = ws.cell(row=4, column=3,
-            value="=MAX(0,DATE(TaxYear,12,31)-MAX(RentStart,DATE(TaxYear,1,1))+1)")
+            value='=MAX(0,DATE(TaxYear,12,31)-MAX(IF(LeaseStart="",RentStart,LeaseStart),DATE(TaxYear,1,1))+1)')
 c.fill = FILL_IN
 ws.cell(row=4, column=4,
         value="Overwrite with the actual days rented if the unit sat vacant.").font = F_NOTE
@@ -686,18 +695,34 @@ for i, f in enumerate(fields):
             c.number_format = DATE_FMT
         if "rent" in f.lower() or "deposit" in f.lower():
             c.number_format = MONEY
-ws.cell(row=14, column=1, value="Days until lease end").font = F_BOLD
-c = ws.cell(row=14, column=2, value='=IF(B10="","",B10-TODAY())')
+# lease of 09/09/2026: Scott Reynolds & Sara Daly, $3,200/mo, 10/01/2026-09/30/2027
+ws["B5"] = TENANT_1
+ws["C5"] = TENANT_2
+for col in ("B", "C"):
+    ws[f"{col}8"] = LEASE_START
+    ws[f"{col}9"] = LEASE_START
+    ws[f"{col}10"] = LEASE_END
+    ws[f"{col}11"] = RENT_DUE_DAY
+ws["B12"] = MONTHLY_RENT
+ws["B11"].number_format = "0"
+ws["C11"].number_format = "0"
+ws.cell(row=14, column=1, value="Door keypad code").font = F_BOLD
+c = ws.cell(row=14, column=2, value=KEYPAD_CODE)
+c.number_format = "@"
+c.fill = FILL_IN
+c.border = BORDER
+ws.cell(row=15, column=1, value="Days until lease end").font = F_BOLD
+c = ws.cell(row=15, column=2, value='=IF(B10="","",B10-TODAY())')
 c.border = BORDER
 ws.conditional_formatting.add(
-    "B14",
+    "B15",
     CellIsRule(operator="lessThan", formula=["60"],
                fill=PatternFill("solid", fgColor=RED_FILL)))
 ws.conditional_formatting.add(
-    "B14",
+    "B15",
     CellIsRule(operator="between", formula=["60", "90"],
                fill=PatternFill("solid", fgColor=YELLOW_FILL)))
-ws.cell(row=15, column=1,
+ws.cell(row=16, column=1,
         value="Send a renewal or non-renewal notice 60-90 days before lease end.").font = F_NOTE
 
 ws.cell(row=18, column=1, value="RENT ROLL").font = F_SUBHDR
@@ -708,7 +733,8 @@ for i in range(12):
     ws.cell(row=row, column=1,
             value="=DATE(TaxYear,1,1)" if i == 0 else f"=EDATE(A{row - 1},1)")
     ws.cell(row=row, column=1).number_format = MONTH_FMT
-    ws.cell(row=row, column=2, value=f"=IF(EOMONTH(A{row},0)>=RentStart,MonthlyRent,0)")
+    ws.cell(row=row, column=2,
+            value=f'=IF(AND($B$9<>"",EOMONTH(A{row},0)>=$B$9,A{row}<=$B$10),$B$12,0)')
     ws.cell(row=row, column=3,
             value=f'=SUMIFS(IncomeAmts,IncomeDates,">="&A{row},IncomeDates,"<="&EOMONTH(A{row},0),IncomeType,"Rent")')
     ws.cell(row=row, column=4, value=f"=C{row}-B{row}")
