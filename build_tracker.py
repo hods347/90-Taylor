@@ -181,7 +181,8 @@ INSTRUCTIONS = [
     ("", "- Deposit tab: fill in as soon as you collect a deposit. Massachusetts is strict - see that tab."),
     ("", ""),
     ("H", "4. MONTHLY ROUTINE (~5 minutes)"),
-    ("", "- Income tab: one row per payment received (rent, late fees, etc.). Do NOT log security deposits here - "
+    ("", "- Income tab: one row per payment received (rent, late fees, etc.). Set 'For month' to the month a rent "
+         "payment covers so the rent roll credits the right month. Do NOT log security deposits here - "
          "deposits are not income; they live on the Deposit tab."),
     ("", "- Expenses tab: one row per expense, including the mortgage payment (category 'Mortgage payment (P&I)') "
          "and the HOA fee (category 'HOA / condo fees'). Keep every receipt - photo into a Drive folder per year."),
@@ -282,7 +283,8 @@ defs = {
     "CatTable": f"Settings!$I$4:$K${3 + n_cat}",
     "IncomeDates": f"Income!$A$2:$A${1 + INCOME_ROWS}",
     "IncomeType": f"Income!$C$2:$C${1 + INCOME_ROWS}",
-    "IncomeAmts": f"Income!$D$2:$D${1 + INCOME_ROWS}",
+    "IncomeFor": f"Income!$D$2:$D${1 + INCOME_ROWS}",
+    "IncomeAmts": f"Income!$E$2:$E${1 + INCOME_ROWS}",
     "ExpDates": f"Expenses!$A$2:$A${1 + EXP_ROWS}",
     "ExpCats": f"Expenses!$C$2:$C${1 + EXP_ROWS}",
     "ExpAmts": f"Expenses!$D$2:$D${1 + EXP_ROWS}",
@@ -303,18 +305,31 @@ for name, ref in defs.items():
 # Income log
 # =================================================================
 ws = wb.create_sheet("Income")
-header_row(ws, 1, ["Date", "Payer", "Type", "Amount", "Method", "Notes"])
-set_widths(ws, {"A": 12, "B": 22, "C": 22, "D": 13, "E": 18, "F": 40})
+header_row(ws, 1, ["Date", "Payer", "Type", "For month", "Amount", "Method",
+                   "Notes"])
+set_widths(ws, {"A": 12, "B": 26, "C": 22, "D": 12, "E": 13, "F": 18, "G": 46})
 ws.freeze_panes = "A2"
 for row in range(2, 2 + INCOME_ROWS):
     ws.cell(row=row, column=1).number_format = DATE_FMT
-    ws.cell(row=row, column=4).number_format = MONEY
+    ws.cell(row=row, column=4).number_format = MONTH_FMT
+    ws.cell(row=row, column=5).number_format = MONEY
+INCOME_PREFILL = [
+    (dt.date(2026, 9, 18), f"{TENANT_1} & {TENANT_2}", "Rent",
+     dt.date(2026, 10, 1), 3200, None, "First month's rent"),
+    (dt.date(2026, 9, 19), f"{TENANT_1} & {TENANT_2}", "Rent",
+     dt.date(2027, 9, 1), 3200, None,
+     "Last month's rent (prepaid) - accrues interest to tenant, see Deposit tab"),
+]
+for i, r in enumerate(INCOME_PREFILL):
+    for j, v in enumerate(r):
+        if v is not None:
+            ws.cell(row=2 + i, column=1 + j, value=v)
 dv_type = DataValidation(type="list", formula1="=IncomeTypes", allow_blank=True)
 dv_pay = DataValidation(type="list", formula1="=PayMethods", allow_blank=True)
 ws.add_data_validation(dv_type)
 ws.add_data_validation(dv_pay)
 dv_type.add(f"C2:C{1 + INCOME_ROWS}")
-dv_pay.add(f"E2:E{1 + INCOME_ROWS}")
+dv_pay.add(f"F2:F{1 + INCOME_ROWS}")
 
 # =================================================================
 # Expenses log
@@ -325,6 +340,14 @@ header_row(ws, 1, ["Date", "Vendor / payee", "Category", "Amount", "Method",
 set_widths(ws, {"A": 12, "B": 24, "C": 28, "D": 13, "E": 18, "F": 10,
                 "G": 36, "H": 42})
 ws.freeze_panes = "A2"
+EXP_PREFILL = [
+    (dt.date(2026, 9, 18), "Listing agent", "Commissions", 3200, None, None,
+     "Broker fee for tenant placement - adjust date to the day actually paid"),
+]
+for i, r in enumerate(EXP_PREFILL):
+    for j, v in enumerate(r):
+        if v is not None:
+            ws.cell(row=2 + i, column=1 + j, value=v)
 for row in range(2, 2 + EXP_ROWS):
     ws.cell(row=row, column=1).number_format = DATE_FMT
     ws.cell(row=row, column=4).number_format = MONEY
@@ -736,7 +759,7 @@ for i in range(12):
     ws.cell(row=row, column=2,
             value=f'=IF(AND($B$9<>"",EOMONTH(A{row},0)>=$B$9,A{row}<=$B$10),$B$12,0)')
     ws.cell(row=row, column=3,
-            value=f'=SUMIFS(IncomeAmts,IncomeDates,">="&A{row},IncomeDates,"<="&EOMONTH(A{row},0),IncomeType,"Rent")')
+            value=f'=SUMIFS(IncomeAmts,IncomeFor,">="&A{row},IncomeFor,"<="&EOMONTH(A{row},0),IncomeType,"Rent")')
     ws.cell(row=row, column=4, value=f"=C{row}-B{row}")
     ws.cell(row=row, column=5,
             value=f'=IF(B{row}=0,"-",IF(C{row}>=B{row},"Paid",IF(C{row}>0,"Partial","Unpaid")))')
@@ -779,8 +802,8 @@ label_input(ws, 8, "Account number (separate, interest-bearing)", None)
 label_input(ws, 9, "Bank interest rate (annual)", 0.0, "0.00%",
             "Tenant is owed 5%/yr OR the actual bank rate if properly deposited.")
 label_input(ws, 10, "Tenancy start date", None, DATE_FMT)
-label_input(ws, 11, "Last month's rent collected (if any)", 0, MONEY,
-            "Also earns interest for the tenant annually.")
+label_input(ws, 11, "Last month's rent collected (if any)", 3200, MONEY,
+            "Received 09/19/2026. Also earns interest for the tenant annually.")
 
 ws.cell(row=13, column=1, value="COMPLIANCE CHECKLIST").font = F_SUBHDR
 ws.cell(row=13, column=1).fill = FILL_SUB
