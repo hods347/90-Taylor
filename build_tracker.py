@@ -790,7 +790,7 @@ set_widths(ws, {"A": 40, "B": 20, "C": 44, "D": 14, "E": 16, "F": 4})
 ws.cell(row=2, column=1,
         value="MA deposit law carries treble damages + attorney's fees for violations.").font = F_NOTE
 
-ws.cell(row=4, column=1, value="DEPOSIT DETAILS").font = F_SUBHDR
+ws.cell(row=4, column=1, value="SECURITY DEPOSIT").font = F_SUBHDR
 ws.cell(row=4, column=1).fill = FILL_SUB
 label_input(ws, 5, "Deposit amount", 0, MONEY)
 c = ws.cell(row=5, column=3,
@@ -801,13 +801,42 @@ label_input(ws, 7, "Bank name (must be a Massachusetts bank)", None)
 label_input(ws, 8, "Account number (separate, interest-bearing)", None)
 label_input(ws, 9, "Bank interest rate (annual)", 0.0, "0.00%",
             "Tenant is owed 5%/yr OR the actual bank rate if properly deposited.")
-label_input(ws, 10, "Tenancy start date", None, DATE_FMT)
-label_input(ws, 11, "Last month's rent collected (if any)", 3200, MONEY,
-            "Received 09/19/2026. Also earns interest for the tenant annually.")
+label_input(ws, 10, "Tenancy start date", LEASE_START, DATE_FMT)
 
-ws.cell(row=13, column=1, value="COMPLIANCE CHECKLIST").font = F_SUBHDR
-ws.cell(row=13, column=1).fill = FILL_SUB
-header_row(ws, 14, ["Requirement", "Deadline", "", "Done? (Y/N)"])
+ws.cell(row=12, column=1, value="LAST MONTH'S RENT (prepaid)").font = F_SUBHDR
+ws.cell(row=12, column=1).fill = FILL_SUB
+label_input(ws, 13, "Amount collected", 3200, MONEY)
+label_input(ws, 14, "Date received", dt.date(2026, 9, 19), DATE_FMT)
+label_input(ws, 15, "APY of the account where it is held", 0.0004, "0.000%",
+            "5%/yr is owed instead if the money is not kept in an interest-bearing bank account.")
+ws.cell(row=16, column=1, value="Interest accrued to date").font = F_BOLD
+c = ws.cell(row=16, column=2,
+            value='=IF(OR(B13=0,B14=""),0,ROUND(B13*B15*YEARFRAC(B14,IF(B34="",TODAY(),B34)),2))')
+c.number_format = MONEY
+c.font = F_BOLD
+header_row(ws, 17, ["Tenancy year", "Anniversary", "Interest due", "Pay/credit by"])
+for n in range(1, 6):
+    row = 17 + n
+    ws.cell(row=row, column=1, value=n).border = BORDER
+    c = ws.cell(row=row, column=2, value=f'=IF($B$10="","",EDATE($B$10,12*A{row}))')
+    c.number_format = DATE_FMT
+    c.border = BORDER
+    c = ws.cell(row=row, column=3, value=(
+        f'=IF(OR($B{row}="",$B$14=""),"",'
+        f'ROUND($B$13*$B$15*YEARFRAC(IF(A{row}=1,$B$14,'
+        f'MAX($B$14,EDATE($B$10,12*(A{row}-1)))),$B{row}),2))'))
+    c.number_format = MONEY
+    c.border = BORDER
+    c = ws.cell(row=row, column=4, value=f'=IF($B{row}="","",$B{row}+30)')
+    c.number_format = DATE_FMT
+    c.border = BORDER
+ws.cell(row=23, column=1,
+        value="Pay or credit each year's interest within 30 days of the anniversary - "
+              "otherwise the tenant may deduct it from the next rent payment.").font = F_NOTE
+
+ws.cell(row=25, column=1, value="COMPLIANCE CHECKLIST").font = F_SUBHDR
+ws.cell(row=25, column=1).fill = FILL_SUB
+header_row(ws, 26, ["Requirement", "Deadline", "", "Done? (Y/N)"])
 reqs = [
     ("Give receipt (amount, date, your name) when deposit is paid", "=B6"),
     ("Deposit into separate interest-bearing MA bank account; give tenant bank name, address, account #", '=IF(B6="","",B6+30)'),
@@ -816,7 +845,7 @@ reqs = [
     ("Pay interest on last month's rent (every anniversary)", '=IF(B10="","",EDATE(B10,12))'),
 ]
 for i, (req, ded) in enumerate(reqs):
-    row = 15 + i
+    row = 27 + i
     ws.cell(row=row, column=1, value=req).alignment = Alignment(wrap_text=True)
     c = ws.cell(row=row, column=2, value=ded)
     c.number_format = DATE_FMT
@@ -826,37 +855,37 @@ for i, (req, ded) in enumerate(reqs):
     c.border = BORDER
 dv_yn2 = DataValidation(type="list", formula1='"Y,N"', allow_blank=True)
 ws.add_data_validation(dv_yn2)
-dv_yn2.add("D15:D19")
+dv_yn2.add("D27:D31")
 
-ws.cell(row=21, column=1, value="MOVE-OUT").font = F_SUBHDR
-ws.cell(row=21, column=1).fill = FILL_SUB
-label_input(ws, 22, "Move-out date", None, DATE_FMT)
-ws.cell(row=23, column=1, value="Deposit + interest must be returned by").font = F_BOLD
-c = ws.cell(row=23, column=2, value='=IF(B22="","",B22+30)')
+ws.cell(row=33, column=1, value="MOVE-OUT").font = F_SUBHDR
+ws.cell(row=33, column=1).fill = FILL_SUB
+label_input(ws, 34, "Move-out date", None, DATE_FMT)
+ws.cell(row=35, column=1, value="Deposit + interest must be returned by").font = F_BOLD
+c = ws.cell(row=35, column=2, value='=IF(B34="","",B34+30)')
 c.number_format = DATE_FMT
 c.font = F_BOLD
-ws.cell(row=24, column=1, value="Interest accrued (estimate)")
-c = ws.cell(row=24, column=2,
-            value='=IF(OR(B6="",B5=0),"",ROUND(B5*B9*YEARFRAC(B6,IF(B22="",TODAY(),B22)),2))')
+ws.cell(row=36, column=1, value="Deposit interest accrued (estimate)")
+c = ws.cell(row=36, column=2,
+            value='=IF(OR(B6="",B5=0),"",ROUND(B5*B9*YEARFRAC(B6,IF(B34="",TODAY(),B34)),2))')
 c.number_format = MONEY
 
-ws.cell(row=26, column=1, value="Itemized deductions at move-out (damage beyond wear & tear, unpaid rent):").font = F_BOLD
-header_row(ws, 27, ["Description", "Amount"], fill=FILL_SUB, font=F_SUBHDR)
+ws.cell(row=38, column=1, value="Itemized deductions at move-out (damage beyond wear & tear, unpaid rent):").font = F_BOLD
+header_row(ws, 39, ["Description", "Amount"], fill=FILL_SUB, font=F_SUBHDR)
 for i in range(5):
-    row = 28 + i
+    row = 40 + i
     ws.cell(row=row, column=1).fill = FILL_IN
     ws.cell(row=row, column=1).border = BORDER
     c = ws.cell(row=row, column=2, value=None)
     c.fill = FILL_IN
     c.border = BORDER
     c.number_format = MONEY
-ws.cell(row=33, column=1, value="AMOUNT TO RETURN").font = F_BOLD
-c = ws.cell(row=33, column=2, value='=B5+IF(B24="",0,B24)-SUM(B28:B32)')
+ws.cell(row=45, column=1, value="AMOUNT TO RETURN").font = F_BOLD
+c = ws.cell(row=45, column=2, value='=B5+IF(B36="",0,B36)-SUM(B40:B44)')
 c.number_format = MONEY
 c.font = F_BOLD
 c.fill = FILL_SUB
 c.border = BORDER
-ws.cell(row=34, column=1,
+ws.cell(row=46, column=1,
         value="Deductions require a sworn, itemized statement with receipts/estimates within 30 days.").font = F_NOTE
 
 # =================================================================
