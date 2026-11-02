@@ -46,9 +46,6 @@ INCOME_TYPES = [
     "Other income",
 ]
 
-PAY_METHODS = ["Check", "ACH / bank transfer", "Zelle", "Venmo", "Cash",
-               "Credit card", "Other"]
-
 # (category, Schedule E line, tax treatment)
 CATEGORIES = [
     ("Advertising", "5", "Deductible"),
@@ -257,11 +254,6 @@ ws.cell(row=3, column=5).fill = FILL_SUB
 for i, t in enumerate(INCOME_TYPES):
     ws.cell(row=4 + i, column=5, value=t).border = BORDER
 
-ws.cell(row=3, column=7, value="Payment methods").font = F_SUBHDR
-ws.cell(row=3, column=7).fill = FILL_SUB
-for i, t in enumerate(PAY_METHODS):
-    ws.cell(row=4 + i, column=7, value=t).border = BORDER
-
 header_row(ws, 3, ["Expense category", "Schedule E line", "Tax treatment"],
            start_col=9, fill=FILL_SUB, font=F_SUBHDR)
 for i, (cat, line, treat) in enumerate(CATEGORIES):
@@ -278,7 +270,6 @@ defs = {
     "HOAFee": "Settings!$B$9",
     "MileageRate": "Settings!$B$10",
     "IncomeTypes": f"Settings!$E$4:$E${3 + len(INCOME_TYPES)}",
-    "PayMethods": f"Settings!$G$4:$G${3 + len(PAY_METHODS)}",
     "ExpenseCats": f"Settings!$I$4:$I${3 + n_cat}",
     "CatTable": f"Settings!$I$4:$K${3 + n_cat}",
     "IncomeDates": f"Income!$A$2:$A${1 + INCOME_ROWS}",
@@ -305,9 +296,8 @@ for name, ref in defs.items():
 # Income log
 # =================================================================
 ws = wb.create_sheet("Income")
-header_row(ws, 1, ["Date", "Payer", "Type", "For month", "Amount", "Method",
-                   "Notes"])
-set_widths(ws, {"A": 12, "B": 26, "C": 22, "D": 12, "E": 13, "F": 18, "G": 46})
+header_row(ws, 1, ["Date", "Payer", "Type", "For month", "Amount", "Notes"])
+set_widths(ws, {"A": 12, "B": 26, "C": 22, "D": 12, "E": 13, "F": 46})
 ws.freeze_panes = "A2"
 for row in range(2, 2 + INCOME_ROWS):
     ws.cell(row=row, column=1).number_format = DATE_FMT
@@ -315,9 +305,9 @@ for row in range(2, 2 + INCOME_ROWS):
     ws.cell(row=row, column=5).number_format = MONEY
 INCOME_PREFILL = [
     (dt.date(2026, 9, 18), f"{TENANT_1} & {TENANT_2}", "Rent",
-     dt.date(2026, 10, 1), 3200, None, "First month's rent"),
+     dt.date(2026, 10, 1), 3200, "First month's rent"),
     (dt.date(2026, 9, 19), f"{TENANT_1} & {TENANT_2}", "Rent",
-     dt.date(2027, 9, 1), 3200, None,
+     dt.date(2027, 9, 1), 3200,
      "Last month's rent (prepaid) - accrues interest to tenant, see Deposit tab"),
 ]
 for i, r in enumerate(INCOME_PREFILL):
@@ -325,23 +315,20 @@ for i, r in enumerate(INCOME_PREFILL):
         if v is not None:
             ws.cell(row=2 + i, column=1 + j, value=v)
 dv_type = DataValidation(type="list", formula1="=IncomeTypes", allow_blank=True)
-dv_pay = DataValidation(type="list", formula1="=PayMethods", allow_blank=True)
 ws.add_data_validation(dv_type)
-ws.add_data_validation(dv_pay)
 dv_type.add(f"C2:C{1 + INCOME_ROWS}")
-dv_pay.add(f"F2:F{1 + INCOME_ROWS}")
 
 # =================================================================
 # Expenses log
 # =================================================================
 ws = wb.create_sheet("Expenses")
-header_row(ws, 1, ["Date", "Vendor / payee", "Category", "Amount", "Method",
+header_row(ws, 1, ["Date", "Vendor / payee", "Category", "Amount",
                    "Receipt?", "Notes", "Tax treatment (auto)"])
-set_widths(ws, {"A": 12, "B": 24, "C": 28, "D": 13, "E": 18, "F": 10,
-                "G": 36, "H": 42})
+set_widths(ws, {"A": 12, "B": 24, "C": 28, "D": 13, "E": 10, "F": 36,
+                "G": 42})
 ws.freeze_panes = "A2"
 EXP_PREFILL = [
-    (dt.date(2026, 9, 18), "Listing agent", "Commissions", 3200, None, None,
+    (dt.date(2026, 9, 18), "Listing agent", "Commissions", 3200, None,
      "Broker fee for tenant placement - adjust date to the day actually paid"),
 ]
 for i, r in enumerate(EXP_PREFILL):
@@ -351,16 +338,14 @@ for i, r in enumerate(EXP_PREFILL):
 for row in range(2, 2 + EXP_ROWS):
     ws.cell(row=row, column=1).number_format = DATE_FMT
     ws.cell(row=row, column=4).number_format = MONEY
-    ws.cell(row=row, column=8,
+    ws.cell(row=row, column=7,
             value=f'=IF($C{row}="","",IFERROR(VLOOKUP($C{row},CatTable,3,FALSE),"?"))').font = F_NOTE
 dv_cat = DataValidation(type="list", formula1="=ExpenseCats", allow_blank=True)
-dv_pay2 = DataValidation(type="list", formula1="=PayMethods", allow_blank=True)
 dv_yn = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True)
-for dv in (dv_cat, dv_pay2, dv_yn):
+for dv in (dv_cat, dv_yn):
     ws.add_data_validation(dv)
 dv_cat.add(f"C2:C{1 + EXP_ROWS}")
-dv_pay2.add(f"E2:E{1 + EXP_ROWS}")
-dv_yn.add(f"F2:F{1 + EXP_ROWS}")
+dv_yn.add(f"E2:E{1 + EXP_ROWS}")
 
 # =================================================================
 # Cash Flow dashboard
